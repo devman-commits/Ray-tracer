@@ -4,6 +4,7 @@
 
 .global start
 	start:
+	 ldr x19, =framebuffer
 	
 	//loops thru each px calling ray_gen, checking instructions and calling shader 
 	render_frame:
