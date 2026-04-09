@@ -41,28 +41,167 @@
 
 .section .text
 	//itoa conversion
-	//leave w0 for the number for conversion here and w1 for mem address and w3 for final result 
+	//leave w0 for the number for conversion here and x19 for mem address and w3 for final result 
 	.global itoa_rgb
 		itoa_rgb:
 		mov x2, 0
 		mov x3, 0
 
 		//hundred digits
-			udiv w3, w0, 100
-			mul w2, w3, 100
-			sub w0, w2
-			add w3, 48
-			strb w3, [x1], 1
+			udiv w3, w0, #100
+			mul w2, w3, #100
+			sub w0, w0, w2
+			add w3, #48
+			strb w3, [x19], #1
 			
 		//tens digits
-			udiv w3, w0, 10
-			mul w2, w3, 10
-			sub w0, w2
-			add w3, 48
-			strb w3, [x1], 1
+			udiv w3, w0, #10
+			mul w2, w3, #10
+			sub w0, w0, w2
+			add w3, #48
+			strb w3, [x19], #1
 
 		//ones digit 
-			add w0, 48
-			strb w0, [x1], 1
-			ret
+			add w0, #48
+			strb w0, [x19], #1
+			ret 
+						
+	.global framebuffer_ini
+		framebuffer_ini:
+			//store lr and fp using sp
+			stp x29, x30, [sp, #-16]!
+			mov x29, sp
+
+			fg_px_0:
+				ldr x4, =ansi_fg
+				mov x5, len_ansi_fg
+				mov x20, 0xfg0
+				//fg_bg_fetch
+				sub x7, x5, #4
+				ldr w3, [x4]
+				str w3, [x19]	
+				mov w3, #0
+				ldr w3, [x4, x7]
+				str w3, [x19, x7]
+				
+				add x19, x19, x5
+				mov w0, w7
+				bl itoa_rgb
+				red_end_final_0:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w11
+				bl itoa_rgb
+				green_end_final_0:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w15
+				bl itoa_rgb
+				blue_end_final_0:
+
+			bg_px_1:
+
+				ldr x4, =ansi_bg
+				mov x5, len_ansi_bg
+				mov x20, 0xbg1
+				//fg_bg_fetch
+				sub x7, x5, #4
+				ldr w3, [x4]
+				str w3, [x19]	
+				mov w3, #0
+				ldr w3, [x4, x7]
+				str w3, [x19, x7]
+				
+				add x19, x19, x5
+				mov w0, w8
+				bl itoa_rgb
+				red_end_final_1:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w12
+				bl itoa_rgb
+				green_end_final_1:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w16
+				bl itoa_rgb
+				blue_end_final_1:
+				//parsing and writing upper half block
+				mov w3, #0
+				mov w2, #0
+				mov x2, =half_block
+				ldr w3, [x2]
+				str w3, [x19], #4
+				
+			fg_px_2:			
+				ldr x4, =ansi_fg
+				mov x5, len_ansi_fg
+				mov x20, 0xfg2
+				//fg_bg_fetch
+				sub x7, x5, #4
+				ldr w3, [x4]
+				str w3, [x19]	
+				mov w3, #0
+				ldr w3, [x4, x7]
+				str w3, [x19, x7]
+				
+				add x19, x19, x5
+				mov w0, w9
+				bl itoa_rgb
+				red_end_final_2:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w13
+				bl itoa_rgb
+				green_end_final_2:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w17
+				bl itoa_rgb
+				blue_end_final_2:
+
+			bg_px_3:
+				ldr x4, =ansi_bg
+				mov x5, len_ansi_bg
+				mov x20, 0xbg3
+				//fg_bg_fetch
+				sub x7, x5, #4
+				ldr w3, [x4]
+				str w3, [x19]	
+				mov w3, #0
+				ldr w3, [x4, x7]
+				str w3, [x19, x7]
+				
+				add x19, x19, x5
+				mov w0, w10
+				bl itoa_rgb
+				red_end_final_3:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w14
+				bl itoa_rgb
+				green_end_final_3:
+				mov w3, #59
+				strb w3, [x19], #1
+
+				mov w0, w18
+				bl itoa_rgb
+				blue_end_final_3:
+				//parsing and writing upper half block
+				mov w3, #0
+				mov w2, #0
+				mov x2, =half_block
+				ldr w3, [x2]
+				str w3, [x19], #4					
+		framebuffer_ini_end:
 			
+			// restoring lr and fp
+				ldp x29, x30, [sp], #16	
+				ret

@@ -11,4 +11,3 @@
 
 	//updates light sources X,Z coords using sine and cosine approx for revolving around y-axis
 	animate_light:
-	end:
