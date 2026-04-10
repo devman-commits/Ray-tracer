@@ -20,6 +20,7 @@
 		.space 262144	
 
 .section .rodata
+.align 2
 	ansi_fg: 
 		.ascii "\x1b[38;2;"
 	len_ansi_fg= .-ansi_fg
@@ -28,9 +29,9 @@
 		.ascii "m\x1b[48;2;"
 	len_ansi_bg= .-ansi_bg
 
-	ansi_reset:
+	ansi_reset_row:
 		.ascii "\x1b[0m\n"
-	len_ansi_reset= .-ansi_reset
+	len_ansi_reset_row= .-ansi_reset
 
 	half_block:		//upper half block
 		.ascii "m\xE2\x96\x80"
@@ -39,13 +40,16 @@
 	cleanup_str: .ascii "\x1b[0m\x1b[?25h\n"
 	len_cleanup_str= .-cleanup_str
 
+	ansi_frame_reset: .ascii "\x1b[H"
+	len_ansi_frame_reset= .-ansi_frame_reset
+
 .section .text
 	//itoa conversion
 	//leave w0 for the number for conversion here and x19 for mem address and w3 for final result 
 	.global itoa_rgb
 		itoa_rgb:
-		mov x2, 0
-		mov x3, 0
+		mov x2, #0
+		mov x3, #0
 
 		//hundred digits
 			udiv w3, w0, #100
@@ -66,11 +70,23 @@
 			strb w0, [x19], #1
 			ret 
 						
-	.global framebuffer_ini
-		framebuffer_ini:
+	.global framebuffer_chunk
+		framebuffer_chunk:
 			//store lr and fp using sp
 			stp x29, x30, [sp, #-16]!
 			mov x29, sp
+
+			cmp x21, #0
+			ccmp x22, #0, #4, eq
+			bne fg_px_0
+			ldr x19, =framebuffer
+			ldr x4, =ansi_frame_reset
+			mov x5, len_ansi_frame_reset
+			ldrh w3, [x4]
+			strh w3, [x19]
+			ldrb w3, [x4, #2]
+			strh w3, [x19, #2]			
+			add x19, x19, #3
 
 			fg_px_0:
 				ldr x4, =ansi_fg
@@ -199,8 +215,20 @@
 				mov w2, #0
 				mov x2, =half_block
 				ldr w3, [x2]
-				str w3, [x19], #4					
-		framebuffer_ini_end:
+				str w3, [x19], #4
+
+				add, x21, x21, #2
+				add, x22, x22, #2
+
+				cmp x21, #100
+				bne framebuffer_chunk_end
+				ldr x4,=ansi_reset_row									
+				mov x5, len_ansi_reset_row
+				ldr w3, [x4]
+				str w3, [x19]
+				add x19, x19, len_ansi_reset_row
+
+		framebuffer_chunk_end:
 			
 			// restoring lr and fp
 				ldp x29, x30, [sp], #16	
