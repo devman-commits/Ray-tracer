@@ -6,5 +6,5 @@
 		mov x8, #64
 		mov x0, #1
 		ldr x1, =framebuffer
-		mov x2, x19
+		sub x2, x19, x1
 		svc 0	
