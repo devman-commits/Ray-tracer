@@ -20,7 +20,6 @@
 		.space 262144	
 
 .section .rodata
-.align 2
 	ansi_fg: 
 		.ascii "\x1b[38;2;"
 	len_ansi_fg= .-ansi_fg
@@ -29,19 +28,9 @@
 		.ascii "m\x1b[48;2;"
 	len_ansi_bg= .-ansi_bg
 
-	ansi_reset_row:
-		.ascii "\x1b[0m\n"
-	len_ansi_reset_row= .-ansi_reset
-
 	half_block:		//upper half block
 		.ascii "m\xE2\x96\x80"
 	len_half_block= .-half_block
-
-	cleanup_str: .ascii "\x1b[0m\x1b[?25h\n"
-	len_cleanup_str= .-cleanup_str
-
-	ansi_frame_reset: .ascii "\x1b[H"
-	len_ansi_frame_reset= .-ansi_frame_reset
 
 .section .text
 	//itoa conversion
@@ -52,21 +41,23 @@
 		mov x3, #0
 
 		//hundred digits
-			udiv w3, w0, #100
-			mul w2, w3, #100
+			mov w23, #100
+			udiv w3, w0, w23
+			mul w2, w3, w23
 			sub w0, w0, w2
-			add w3, #48
+			add w3, w3, #48
 			strb w3, [x19], #1
 			
 		//tens digits
-			udiv w3, w0, #10
-			mul w2, w3, #10
+			mov w23, #10
+			udiv w3, w0, w23
+			mul w2, w3, w23
 			sub w0, w0, w2
-			add w3, #48
+			add w3, w3, #48
 			strb w3, [x19], #1
 
 		//ones digit 
-			add w0, #48
+			add w0, w0, #48
 			strb w0, [x19], #1
 			ret 
 						
@@ -76,29 +67,17 @@
 			stp x29, x30, [sp, #-16]!
 			mov x29, sp
 
-			cmp x21, #0
-			ccmp x22, #0, #4, eq
-			bne fg_px_0
-			ldr x19, =framebuffer
-			ldr x4, =ansi_frame_reset
-			mov x5, len_ansi_frame_reset
-			ldrh w3, [x4]
-			strh w3, [x19]
-			ldrb w3, [x4, #2]
-			strh w3, [x19, #2]			
-			add x19, x19, #3
-
 			fg_px_0:
 				ldr x4, =ansi_fg
 				mov x5, len_ansi_fg
-				mov x20, 0xfg0
 				//fg_bg_fetch
-				sub x7, x5, #4
+				mov x20, #0
+				sub x20, x5, #4
 				ldr w3, [x4]
 				str w3, [x19]	
 				mov w3, #0
-				ldr w3, [x4, x7]
-				str w3, [x19, x7]
+				ldr w3, [x4, x20]
+				str w3, [x19, x20]
 				
 				add x19, x19, x5
 				mov w0, w7
@@ -110,7 +89,7 @@
 				mov w0, w11
 				bl itoa_rgb
 				green_end_final_0:
-				mov w3, #59
+				mov w3, #59			//59 is ascii for semicolon
 				strb w3, [x19], #1
 
 				mov w0, w15
@@ -121,14 +100,14 @@
 
 				ldr x4, =ansi_bg
 				mov x5, len_ansi_bg
-				mov x20, 0xbg1
 				//fg_bg_fetch
-				sub x7, x5, #4
+				mov x20, #0
+				sub x20, x5, #4
 				ldr w3, [x4]
 				str w3, [x19]	
 				mov w3, #0
-				ldr w3, [x4, x7]
-				str w3, [x19, x7]
+				ldr w3, [x4, x20]
+				str w3, [x19, x20]
 				
 				add x19, x19, x5
 				mov w0, w8
@@ -149,21 +128,21 @@
 				//parsing and writing upper half block
 				mov w3, #0
 				mov w2, #0
-				mov x2, =half_block
+				ldr x2, =half_block
 				ldr w3, [x2]
 				str w3, [x19], #4
 				
 			fg_px_2:			
 				ldr x4, =ansi_fg
 				mov x5, len_ansi_fg
-				mov x20, 0xfg2
 				//fg_bg_fetch
-				sub x7, x5, #4
+				mov x20, #0
+				sub x20, x5, #4
 				ldr w3, [x4]
 				str w3, [x19]	
 				mov w3, #0
-				ldr w3, [x4, x7]
-				str w3, [x19, x7]
+				ldr w3, [x4, x20]
+				str w3, [x19, x20]
 				
 				add x19, x19, x5
 				mov w0, w9
@@ -185,14 +164,14 @@
 			bg_px_3:
 				ldr x4, =ansi_bg
 				mov x5, len_ansi_bg
-				mov x20, 0xbg3
 				//fg_bg_fetch
-				sub x7, x5, #4
+				mov x20, #0
+				sub x20, x5, #4
 				ldr w3, [x4]
 				str w3, [x19]	
 				mov w3, #0
-				ldr w3, [x4, x7]
-				str w3, [x19, x7]
+				ldr w3, [x4, x20]
+				str w3, [x19, x20]
 				
 				add x19, x19, x5
 				mov w0, w10
@@ -213,20 +192,9 @@
 				//parsing and writing upper half block
 				mov w3, #0
 				mov w2, #0
-				mov x2, =half_block
+				ldr x2, =half_block
 				ldr w3, [x2]
 				str w3, [x19], #4
-
-				add, x21, x21, #2
-				add, x22, x22, #2
-
-				cmp x21, #100
-				bne framebuffer_chunk_end
-				ldr x4,=ansi_reset_row									
-				mov x5, len_ansi_reset_row
-				ldr w3, [x4]
-				str w3, [x19]
-				add x19, x19, len_ansi_reset_row
 
 		framebuffer_chunk_end:
 			
