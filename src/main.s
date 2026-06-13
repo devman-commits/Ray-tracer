@@ -3,6 +3,10 @@
 .align 4
 offset_x: .float 0.0, 0.0, 1.0, 1.0
 offset_y: .float 0.0, 1.0, 0.0, 1.0
+//1280 here
+inv_width: .float 0.00078125, 0.00078125, 0.00078125, 0.00078125
+inv_height: .float (1.0/720.0), (1.0/720.0), (1.0/720.0), (1.0/720.0)
+aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 
 .section .bss
 .align 4
@@ -22,7 +26,60 @@ offset_y: .float 0.0, 1.0, 0.0, 1.0
 		
 
 			 //creates a ray direction using pixel x/y coords and camera fov
-			 ray_gen: 	 
+			 ray_gen:
+			 	px_normalize:
+			 		//moving curent x and y into v0.4s and v1.4s
+			 		dup v0.4s, w27
+			 		dup v1.4s, w28
+			 		ucvtf v0.4s, v0.4s
+			 		ucvtf v1.4s, v1.4s
+			 		ldr q2, =offset_x
+			 		fadd v0.4s, v0.4s, v2.4s
+			 		ldr q2, =offset_y
+			 		fadd v1.4s, v1.4s, v2.4s
+			 		//add 0.5 to offset the ray to px centre
+			 		fmov v2.4s, #0.5
+			 		fadd v0.4s, v0.4s, v2.4s
+			 		fadd v1.4s, v1.4s, v2.4s
+
+			 		//normalize screen dimensions to [0.0, 1.0]
+			 		ldr q2, =inv_width
+			 		fmul v0.4s, v0.4s, v2.4s
+			 		ldr q2, =inv_height
+			 		fmul v1.4s, v1.4s, v2.4s
+
+			 		fmov v2.4s, #2.0
+			 		fmov v3.4s, #1.0
+					//for X
+			 		fmul v0.4s, v0.4s, v2.4s
+					fsub v0.4s, v0.4s, v3.4s
+					//for Y
+			 		fmul v1.4s, v1.4s, v2.4s
+			 		fmul v1.4s, v3.4s, v1.4s
+					//to prevent strectched image 
+					ldr q2, =aspect_ratio
+			 		fmul v0.4s, v0.4s, v2.4s
+
+			 		//store -1.0 in v2.4s to represent screen one unit apart from the origin
+			 		fmov v2.4s, #-1.0
+			 		vec_normalize:
+		 				//calculating |vector|^2		 	
+		 				fmul v3.4s, v0.4s, v0.4s
+						fmla v3.4s, v1.4s, v1.4s
+		 				fmla v3.4s, v2.4s, v2.4s
+			 		
+	 					//frsqrte directly gives 1/(sqrtx) in one clock cycle
+		 				frsqrte v4.4s, v3.4s
+			 		
+						//normalizing X, Y, Z of all 4 vectors
+			 			fmul v0.4s, v0.4s, v4.4s
+			 			fmul v1.4s, v1.4s, v4.4s
+			 			fmul v2.4s, v2.4s, v4.4s
+			 		//store values of X,Y and Z in respective registers for branching to intersect sphere
+			 		mov v3.16b, v0.16b
+			 		mov v4.16b, v1.16b
+			 		mov v5.16b, v2.16b
+			 		bl intersect_sphere
 	 
 	//loops thru each px calling ray_gen, checking instructions and calling shader 
 	//also kepps check of x and y coords
