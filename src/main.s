@@ -24,7 +24,13 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 		movi v29.4s, #1
 		ucvtf v29.4s, v29.4s
 		
-
+	frame_start:
+		mov w27, #0
+		mov w28, #0
+		bl ppm_ini
+		//dates light sources X,Z coords using sine and cosine approx for revolving around y-axis
+  	animate_light:
+			
 			 //creates a ray direction using pixel x/y coords and camera fov
 			 ray_gen:
 			 	px_normalize:
@@ -72,30 +78,38 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 		 				frsqrte v4.4s, v3.4s
 			 		
 						//normalizing X, Y, Z of all 4 vectors
-			 			fmul v0.4s, v0.4s, v4.4s
-			 			fmul v1.4s, v1.4s, v4.4s
-			 			fmul v2.4s, v2.4s, v4.4s
-			 		//store values of X,Y and Z in respective registers for branching to intersect sphere
-			 		mov v3.16b, v0.16b
-			 		mov v4.16b, v1.16b
-			 		mov v5.16b, v2.16b
+			 			fmul v3.4s, v0.4s, v4.4s
+			 			fmul v4.4s, v1.4s, v4.4s
+			 			fmul v5.4s, v2.4s, v4.4s
 			 		bl intersect_sphere
 	 
 	//loops thru each px calling ray_gen, checking instructions and calling shader 
 	//also kepps check of x and y coords
 .global render_frame
 	render_frame:
-
-		flush_check:
+		
+			flush_check:
 			ldr x1, =fb_end
 			sub x1, x1, #64
 			cmp x23, x1
 			bge flush_buffer
-			 
+		//incrementing x and y coords of screen
+		mov w0, #2
+		add w27, w0
+		cmp w27, #1280
+		blt width_left 
+		add w28, w0
+		cmp w28, #720
+		bge frame_flush
+		mov w0, #1
+		add w24, w0
+		cmp w24, #100
+		bg end 
+		b frame_start
+		width_left:
+		b ray_gen
+		
 	end:
 	mov x0, #0
 	mov x8, #93
 	svc 0
-	//feature
-	//updates light sources X,Z coords using sine and cosine approx for revolving around y-axis
-	animate_light:

@@ -52,6 +52,7 @@
 				fsub v17.4s, v13.4s, v15.4s
 				//bitwise compare and giving zeroes to all lanes where d is negative 
 				vand v17.16b, v17.16b, v15.16b
+				mov v26.16b, v15.16b
 				fcmpge v15.4s, v17.4s, v30.4s
 				vand v17.16b, v17.16b, v15.16b
 		ret
