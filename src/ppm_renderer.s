@@ -1,7 +1,7 @@
 .arch armv8-a
 .section .data
 	// \0 is null terminator for pathnames 
-	filename: .ascii "output.ppm\0"
+	filename: .ascii "output001.ppm\0"
 
 	//P3 fprmat (human readable ppm file). width hieght, max_colour_value
 	ppm_header: .ascii "P3\n1280 720\n255\n"
@@ -83,7 +83,6 @@
 			//adding newline character (0x0A)
 			mov w0, #0x0A
 			strb w0, [x26], #1
-			add x23, x23, #12
 
 			.endm
 
@@ -113,7 +112,7 @@
 		mov x0, #-100
 		ldr x1, =filename			
 		mov x2, 0x241
-		mov x3, 0x1B6
+		mov x3, #0666
 		svc 0
 		mov x25, x0		//saving file descriptor in x25
 
@@ -128,18 +127,18 @@
 	.global rgb_px 
 		rgb_px:
 		//red max min and convert to int 
-		fmin v23.4s, v23.4s, v30.4s
-		fmax v23.4s, v23.4s, v31.4s
+		fmax v23.4s, v23.4s, v30.4s
+		fmin v23.4s, v23.4s, v31.4s
 		fcvtzs v23.4s, v23.4s
 
 		//green max min and convert to int 
-		fmin v24.4s, v24.4s, v30.4s
-		fmax v24.4s, v24.4s, v31.4s
+		fmax v24.4s, v24.4s, v30.4s
+		fmin v24.4s, v24.4s, v31.4s
 		fcvtzs v24.4s, v24.4s
 
 		//blue max min and convert to int 
-		fmin v25.4s, v25.4s, v30.4s
-		fmax v25.4s, v25.4s, v31.4s
+		fmax v25.4s, v25.4s, v30.4s
+		fmin v25.4s, v25.4s, v31.4s
 		fcvtzs v25.4s, v25.4s
 
 			write_px 0

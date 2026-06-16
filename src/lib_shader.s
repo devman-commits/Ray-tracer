@@ -22,12 +22,12 @@
 		fmul v16.4s, v5.4s, v17.4s
 		fadd v13.4s, v13.4s, v0.4s
 		fadd v14.4s, v14.4s, v1.4s
-		fadd v15.4s, v15.4s, v2.4s
+		fadd v16.4s, v16.4s, v2.4s
 
 		//calculating surface normal
 		fsub v6.4s, v13.4s, v6.4s
 		fsub v7.4s, v14.4s, v7.4s
-		fsub v8.4s, v15.4s, v8.4s
+		fsub v8.4s, v16.4s, v8.4s
 			//normalize 
 				//calculating |vector|^2		 	
 	 			fmul v9.4s, v6.4s, v6.4s
@@ -92,26 +92,28 @@
 			movi v25.4s, #0
 
 		//diffused intensity (lambertian)
-			movi v20.4s, #0
-			fmul v20.4s, v6.4s, v10.4s
-			fmla v20.4s, v7.4s, v11.4s
-			fmla v20.4s, v8.4s, v12.4s
+			movi v27.4s, #0
+			fmul v27.4s, v6.4s, v10.4s
+			fmla v27.4s, v7.4s, v11.4s
+			fmla v27.4s, v8.4s, v12.4s
 			//clamp to greater than zero
 			fcmge v15.4s, v20.4s, v30.4s
-			and v20.16b, v20.16b, v15.16b
+			and v27.16b, v27.16b, v15.16b
 
 		//specular highlight 
-			movi v21.4s, #0
-			fmul v21.4s, v6.4s, v17.4s
-			fmla v21.4s, v7.4s, v18.4s
-			fmla v21.4s, v8.4s, v19.4s
+			movi v28.4s, #0
+			fmul v28.4s, v6.4s, v17.4s
+			fmla v28.4s, v7.4s, v18.4s
+			fmla v28.4s, v8.4s, v19.4s
 			//clamp to greater than zero
-			fcmge v15.4s, v21.4s, v30.4s
-			and v21.16b, v21.16b, v15.16b
-			fmul v21.4s, v21.4s, v21.4s
-			fmul v21.4s, v21.4s, v21.4s
-			fmul v21.4s, v21.4s, v21.4s
-			fmul v21.4s, v21.4s, v21.4s
+			fcmge v15.4s, v28.4s, v30.4s
+			and v28.16b, v28.16b, v15.16b
+			fmul v28.4s, v28.4s, v28.4s
+			fmul v28.4s, v28.4s, v28.4s
+			fmul v28.4s, v28.4s, v28.4s
+			fmul v28.4s, v28.4s, v28.4s
+			fmul v28.4s, v28.4s, v28.4s
+
 
 		//values of colours for sphere 
 		//red sphere and white light 	
@@ -127,13 +129,13 @@
 		fmul v24.4s, v7.4s, v9.4s
 		fmul v25.4s, v8.4s, v9.4s
 		//diffuse 
-		fmla v23.4s, v6.4s, v20.4s
-		fmla v24.4s, v7.4s, v20.4s
-		fmla v25.4s, v8.4s, v20.4s
+		fmla v23.4s, v6.4s, v27.4s
+		fmla v24.4s, v7.4s, v27.4s
+		fmla v25.4s, v8.4s, v27.4s
 		//specular 
-		fmla v23.4s, v3.4s, v21.4s
-		fmla v24.4s, v4.4s, v21.4s
-		fmla v25.4s, v5.4s, v21.4s
+		fmla v23.4s, v3.4s, v28.4s
+		fmla v24.4s, v4.4s, v28.4s
+		fmla v25.4s, v5.4s, v28.4s
 
 		//bg bitmask 
 		//grey BG

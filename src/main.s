@@ -12,12 +12,10 @@ aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 .align 4
 	.global fb
 		fb: .space 	262144
-	fb_end: 
-	.align 4
 
 .section .text
-.global start
-	start:
+.global _start
+	_start:
 		ldr x26, =fb
 		movi v30.4s, #0     //minimum color value
     ucvtf v30.4s, v30.4s
@@ -30,8 +28,19 @@ aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 		bl ppm_ini
 		//dates light sources X,Z coords using sine and cosine approx for revolving around y-axis
   	animate_light:
-			
-			 //creates a ray direction using pixel x/y coords and camera fov
+		//sweeps from -50 to +50 in x for 100 frames
+		//moving frame counter to light X
+		dup v20.4s, w24
+		ucvtf v20.4s, v20.4s
+		fmov v27.4s, #0.25 
+	    fmul v20.4s, v20.4s, v27.4s
+    	fmov v27.4s, #25 
+		fsub v20.4s, v20.4s, v27.4s 
+    	//Y and Z permanent 
+		fmov v21.4s, #0.75
+	    fmov v22.4s, #-3.0
+
+		  //creates a ray direction using pixel x/y coords and camera fov
 			width_left:
 			 ray_gen:
 			 	px_normalize:
@@ -66,7 +75,7 @@ aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 					fsub v0.4s, v0.4s, v3.4s
 					//for Y
 			 		fmul v1.4s, v1.4s, v2.4s
-			 		fmul v1.4s, v3.4s, v1.4s
+			 		fsub v1.4s, v3.4s, v1.4s
 					//to prevent strectched image 
 					ldr x9, =aspect_ratio
 					ldr q2, [x9]
@@ -81,12 +90,12 @@ aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 		 				fmla v3.4s, v2.4s, v2.4s
 			 		
 	 					//frsqrte directly gives 1/(sqrtx) in one clock cycle
-		 				frsqrte v4.4s, v3.4s
+		 				frsqrte v9.4s, v3.4s
 			 		
 						//normalizing X, Y, Z of all 4 vectors
-			 			fmul v3.4s, v0.4s, v4.4s
-			 			fmul v4.4s, v1.4s, v4.4s
-			 			fmul v5.4s, v2.4s, v4.4s
+			 			fmul v3.4s, v0.4s, v9.4s
+			 			fmul v4.4s, v1.4s, v9.4s
+			 			fmul v5.4s, v2.4s, v9.4s
 			 		bl intersect_sphere
 	 
 	//loops thru each px calling ray_gen, checking instructions and calling shader 
@@ -96,19 +105,25 @@ aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 		bl shader
 		bl rgb_px		
 			flush_check:
-			ldr x1, =fb_end
-			sub x1, x1, #64
-			cmp x23, x1
-			bge flush_buffer
+			ldr x23, =fb
+			sub x23, x26, x23
+			ldr x2, =262000
+			cmp x23, x2
+			blt skip_bufferflush
+			bl buffer_flush
 		//incrementing x and y coords of screen
+		skip_bufferflush:
 		add w27, w27, #4
 		cmp w27, #1280
 		blt width_left 
-		add w28, w26, #1
+		mov w27, #0
+		add w28, w28, #1
 		cmp w28, #720
-		bge frame_flush
+		blt ray_gen
+		bl buffer_flush
+		bl frame_flush
 		add w24, w24, #1
-		cmp w24, #100
+		cmp w24, #149
 		bgt end 
 		b frame_start
 		

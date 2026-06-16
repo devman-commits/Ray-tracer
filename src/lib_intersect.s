@@ -47,13 +47,14 @@
 			//calculating value t
 				//calculating bitmask first for discriminant in v15.4s
 				fcmge v15.4s, v16.4s, v30.4s
-				fsqrt v15.4s, v15.4s
+				mov v26.16b, v15.16b
+				fsqrt v16.4s, v16.4s
 				fneg v13.4s, v13.4s
-				fsub v17.4s, v13.4s, v15.4s
+				fsub v17.4s, v13.4s, v16.4s
 				//bitwise compare and giving zeroes to all lanes where d is negative 
 				and v17.16b, v17.16b, v15.16b
-				mov v26.16b, v15.16b
-				fcmge v15.4s, v17.4s, v30.4s
+				fcmgt v15.4s, v17.4s, v30.4s
 				and v17.16b, v17.16b, v15.16b
+				and v26.16b, v26.16b, v15.16b
 		ret
 //.global intersect_wireframe_room
