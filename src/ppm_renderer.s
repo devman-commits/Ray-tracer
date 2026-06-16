@@ -1,5 +1,4 @@
 .arch armv8-a
-
 .section .data
 	// \0 is null terminator for pathnames 
 	filename: .ascii "output.ppm\0"
@@ -21,7 +20,7 @@
 			udiv w3, w0, w2
 			msub w0, w3, w2, w0
 			add w3, w3, #48
-			strb w3, [x26], #1
+			strb w3,[x26], #1
 
 			mov w2, #10
 			mov w3, #0
@@ -81,7 +80,7 @@
 			mov w0, #0x20
 			strb w0, [x26], #1
 
-			//adding newlinw character (0x0A)
+			//adding newline character (0x0A)
 			mov w0, #0x0A
 			strb w0, [x26], #1
 			add x23, x23, #12

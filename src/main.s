@@ -1,28 +1,28 @@
 .arch armv8-a
 .section .rodata
 .align 4
-offset_x: .float 0.0, 0.0, 1.0, 1.0
-offset_y: .float 0.0, 1.0, 0.0, 1.0
+offset_x: .float 0.0, 1.0, 2.0, 3.0
+offset_y: .float 0.0, 0.0, 0.0, 0.0
 //1280 here
 inv_width: .float 0.00078125, 0.00078125, 0.00078125, 0.00078125
-inv_height: .float (1.0/720.0), (1.0/720.0), (1.0/720.0), (1.0/720.0)
-aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
+inv_height: .float 0.0013888889, 0.0013888889, 0.0013888889, 0.0013888889
+aspect_ratio: .float 1.77777778, 1.77777778, 1.77777778, 1.77777778
 
 .section .bss
 .align 4
 	.global fb
 		fb: .space 	262144
-		fb_end: 
+	fb_end: 
+	.align 4
 
+.section .text
 .global start
 	start:
 		ldr x26, =fb
-		fmov v30.4s, #0.0		//min color value
-		movi v31.4s, #255		//maximum color value
+		movi v30.4s, #0     //minimum color value
+    ucvtf v30.4s, v30.4s
+    movi v31.4s, #255		//maximum color value
 		ucvtf v31.4s, v31.4s	//convert 255 integer to float 255.0 
-		fmov v28.4s, #0.0
-		movi v29.4s, #1
-		ucvtf v29.4s, v29.4s
 		
 	frame_start:
 		mov w27, #0
@@ -32,6 +32,7 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
   	animate_light:
 			
 			 //creates a ray direction using pixel x/y coords and camera fov
+			width_left:
 			 ray_gen:
 			 	px_normalize:
 			 		//moving curent x and y into v0.4s and v1.4s
@@ -39,9 +40,11 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 			 		dup v1.4s, w28
 			 		ucvtf v0.4s, v0.4s
 			 		ucvtf v1.4s, v1.4s
-			 		ldr q2, =offset_x
+			 		ldr x9, =offset_x
+			 		ldr q2, [x9]
 			 		fadd v0.4s, v0.4s, v2.4s
-			 		ldr q2, =offset_y
+			 		ldr x9, =offset_y
+			 		ldr q2, [x9]
 			 		fadd v1.4s, v1.4s, v2.4s
 			 		//add 0.5 to offset the ray to px centre
 			 		fmov v2.4s, #0.5
@@ -49,9 +52,11 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 			 		fadd v1.4s, v1.4s, v2.4s
 
 			 		//normalize screen dimensions to [0.0, 1.0]
-			 		ldr q2, =inv_width
+			 		ldr x9, =inv_width
+			 		ldr q2, [x9]
 			 		fmul v0.4s, v0.4s, v2.4s
-			 		ldr q2, =inv_height
+			 		ldr x9, =inv_height
+			 		ldr q2, [x9]
 			 		fmul v1.4s, v1.4s, v2.4s
 
 			 		fmov v2.4s, #2.0
@@ -63,7 +68,8 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 			 		fmul v1.4s, v1.4s, v2.4s
 			 		fmul v1.4s, v3.4s, v1.4s
 					//to prevent strectched image 
-					ldr q2, =aspect_ratio
+					ldr x9, =aspect_ratio
+					ldr q2, [x9]
 			 		fmul v0.4s, v0.4s, v2.4s
 
 			 		//store -1.0 in v2.4s to represent screen one unit apart from the origin
@@ -87,27 +93,24 @@ aspect_ratio: .float (16.0/9.0), (16.0/9.0), (16.0/9.0), (16.0/9.0)
 	//also kepps check of x and y coords
 .global render_frame
 	render_frame:
-		
+		bl shader
+		bl rgb_px		
 			flush_check:
 			ldr x1, =fb_end
 			sub x1, x1, #64
 			cmp x23, x1
 			bge flush_buffer
 		//incrementing x and y coords of screen
-		mov w0, #2
-		add w27, w0
+		add w27, w27, #4
 		cmp w27, #1280
 		blt width_left 
-		add w28, w0
+		add w28, w26, #1
 		cmp w28, #720
 		bge frame_flush
-		mov w0, #1
-		add w24, w0
+		add w24, w24, #1
 		cmp w24, #100
-		bg end 
+		bgt end 
 		b frame_start
-		width_left:
-		b ray_gen
 		
 	end:
 	mov x0, #0
